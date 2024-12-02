@@ -102,8 +102,8 @@ int main(void)
 			ClientAddress.sin_addr.S_un.S_un_b.s_b4,
 			ntohs(ClientAddress.sin_port));
 	}
-	strcpy_s(MessageBuffer, "Welcome");
-	send(ConnectedSocket, MessageBuffer, strlen(MessageBuffer), 0);
+	//strcpy_s(MessageBuffer, "Welcome");
+	//send(ConnectedSocket, MessageBuffer, strlen(MessageBuffer), 0);
 	///----------------------
 	/// 6. Send & receive the data on a connected socket
 	while (1)
@@ -112,9 +112,14 @@ int main(void)
 
 		int MessageBufferLen = 50; // changes the length of message sent from client to server
 		Result = recv(ConnectedSocket, MessageBuffer, DEFAULT_BUFLEN, 0);
+		if (!strcmp(MessageBuffer, "")) {
+			Result = 0;
+		}
 		if (0 < Result)
 		{
 			printf("Bytes received : %d\n", Result);
+
+			printf("REWEWRW : %d\n", Result);
 			printf("Buffer received : %s\n", MessageBuffer);
 		}
 		else if (0 == Result)
@@ -143,6 +148,8 @@ int main(void)
 					ntohs(ClientAddress.sin_port));
 			}
 			printf("testing: \n");
+			memset(MessageBuffer, '\0', DEFAULT_BUFLEN);
+			Result = recv(ConnectedSocket, MessageBuffer, DEFAULT_BUFLEN, 0);
 		}
 		else
 		{
@@ -150,20 +157,30 @@ int main(void)
 			break;
 		}
 
+		//printf("Buffer receivedREYKENJ : %s\n", MessageBuffer);
+		//if (!strcmp(MessageBuffer, "CLOSE MSG")) {
+		//	printf("Buffer should work");
+		//}
+		//memset(MessageBuffer, '\0', DEFAULT_BUFLEN);
 		if (!strcmp(MessageBuffer, "Hello World")) {
+
+			memset(MessageBuffer, '\0', DEFAULT_BUFLEN);
 			strcpy_s(MessageBuffer, "RTN PRINT OK");
-			Result = send(ConnectedSocket, MessageBuffer, strlen(MessageBuffer), 0);
 			// fix later cuz there is a problem where if the user speaks, it would return a part of these messages and also repeatinbg a part of what they said as well
 		}
 		else if (!strcmp(MessageBuffer, "CLOSE MSG")) {
+
+			memset(MessageBuffer, '\0', DEFAULT_BUFLEN);
 			strcpy_s(MessageBuffer, "CLOSE OK");
-			Result = send(ConnectedSocket, MessageBuffer, strlen(MessageBuffer), 0);
+			//Result = 0;
 			// fix later cuz there is a problem where if the user speaks, it would return a part of these messages and also repeatinbg a part of what they said as well
 		}
 		else {
+			memset(MessageBuffer, '\0', DEFAULT_BUFLEN);
 			strcpy_s(MessageBuffer, "RTN OK");
-			Result = send(ConnectedSocket, MessageBuffer, strlen(MessageBuffer), 0);
 		}
+		printf("Buffer receivedREYKENJ : %s\n", MessageBuffer);
+		Result = send(ConnectedSocket, MessageBuffer, strlen(MessageBuffer), 0);
 		///// Echo same message to client
 		//Result = send(ConnectedSocket, MessageBuffer, Result, 0);
 		if (SOCKET_ERROR == Result)

@@ -11,6 +11,7 @@
 #endif
 #include <winsock2.h>
 #include <stdio.h>
+#include <iostream>
 /// Link with ws2_32.lib
 #pragma comment(lib, "Ws2_32.lib")
 #define DEFAULT_BUFLEN 1024
@@ -43,27 +44,97 @@ int main(void)
 		WSACleanup();
 		return 1;
 	}
-	///----------------------
-	/// The sockaddr_in structure specifies the address family,
-	/// IP address, and port of the server to be connected to.
-	ServerAddress.sin_family = AF_INET;
-	/// Connecting to local machine. "127.0.0.1" is the loopback address.
-	ServerAddress.sin_addr.s_addr = inet_addr("127.0.0.1");
-	ServerAddress.sin_port = htons(DEFAULT_PORT);
-	///----------------------
-	/// 3. Establish a connection to a specified socket
-	if (SOCKET_ERROR == connect(ConnectSocket, (SOCKADDR*)&ServerAddress,
-		sizeof(ServerAddress)))
-	{
-		closesocket(ConnectSocket);
-		printf("Unable to connect to server: %ld\n", WSAGetLastError());
-		WSACleanup();
-		return 1;
-	}
-	printf("Connected to server.\n");
+	/////----------------------
+	///// The sockaddr_in structure specifies the address family,
+	///// IP address, and port of the server to be connected to.
+	//ServerAddress.sin_family = AF_INET;
+	///// Connecting to local machine. "127.0.0.1" is the loopback address.
+	//ServerAddress.sin_addr.s_addr = inet_addr("127.0.0.1");
+	//ServerAddress.sin_port = htons(DEFAULT_PORT);
+	/////----------------------
+	///// 3. Establish a connection to a specified socket
+	//if (SOCKET_ERROR == connect(ConnectSocket, (SOCKADDR*)&ServerAddress,
+	//	sizeof(ServerAddress)))
+	//{
+	//	closesocket(ConnectSocket);
+	//	printf("Unable to connect to server: %ld\n", WSAGetLastError());
+	//	WSACleanup();
+	//	return 1;
+	//}
 	/// Receive until the peer closes the connection
 	while (1)
 	{
+
+		// Create a new socket
+		ConnectSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+		if (INVALID_SOCKET == ConnectSocket)
+		{
+			printf("Error at socket(): %ld\n", WSAGetLastError());
+			WSACleanup();
+			return 1;
+		}
+
+		memset(MessageBuffer, '\0', DEFAULT_BUFLEN);
+		std::cout << "Destination IP address : ";
+		for (i = 0; i < (DEFAULT_BUFLEN - 1); i++)
+		{
+			MessageBuffer[i] = getchar();
+			if (MessageBuffer[i] == '\n')
+			{
+				MessageBuffer[i++] = '\0';
+				break;
+			}
+		}
+		BufferLen = i;
+		//std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n'); // Clear leftover input
+
+		///----------------------
+		/// The sockaddr_in structure specifies the address family,
+		/// IP address, and port of the server to be connected to.
+		ServerAddress.sin_family = AF_INET;
+		/// Connecting to local machine. "127.0.0.1" is the loopback address.
+		ServerAddress.sin_addr.s_addr = inet_addr(MessageBuffer);
+		ServerAddress.sin_port = htons(DEFAULT_PORT);
+
+
+		///----------------------
+		/// 3. Establish a connection to a specified socket
+		/// 
+		/// 
+		if (SOCKET_ERROR == connect(ConnectSocket, (SOCKADDR*)&ServerAddress,
+			sizeof(ServerAddress)))
+		{
+			closesocket(ConnectSocket);
+			std::cout << "Unable to connect to server: " << WSAGetLastError() << std::endl;
+			WSACleanup();
+			return 1;
+		}
+
+		printf("Connected to server.\n");
+
+
+		memset(MessageBuffer, '\0', DEFAULT_BUFLEN);
+
+		printf("Enter messages : ");
+		for (i = 0; i < (DEFAULT_BUFLEN - 1); i++)
+		{
+			MessageBuffer[i] = getchar();
+			if (MessageBuffer[i] == '\n')
+			{
+				MessageBuffer[i++] = '\0';
+				break;
+			}
+		}
+		BufferLen = i;
+		/// 4. Send & receive the data on a connected socket
+		if (SOCKET_ERROR == (Result = send(ConnectSocket, MessageBuffer, BufferLen, 0)))
+		{
+			printf("Send failed: %d\n", WSAGetLastError());
+			closesocket(ConnectSocket);
+			WSACleanup();
+			return 1;
+		}
+		printf("Bytes sent: %ld\n", Result);
 
 		memset(MessageBuffer, '\0', DEFAULT_BUFLEN);
 		Result = recv(ConnectSocket, MessageBuffer, DEFAULT_BUFLEN, 0);
@@ -88,28 +159,13 @@ int main(void)
 		}
 		printf("Bytes received : %d\n", Result);
 
-		memset(MessageBuffer, '\0', DEFAULT_BUFLEN);
+		//memset(MessageB/'\0', DEFAULT_BUFLEN);
+		//send(ConnectSocket, MessageBuffer, BufferLen, 0);
 
-		printf("Enter messages : ");
-		for (i = 0; i < (DEFAULT_BUFLEN - 1); i++)
-		{
-			MessageBuffer[i] = getchar();
-			if (MessageBuffer[i] == '\n')
-			{
-				MessageBuffer[i++] = '\0';
-				break;
-			}
-		}
-		BufferLen = i;
-		/// 4. Send & receive the data on a connected socket
-		if (SOCKET_ERROR == (Result = send(ConnectSocket, MessageBuffer, BufferLen, 0)))
-		{
-			printf("Send failed: %d\n", WSAGetLastError());
-			closesocket(ConnectSocket);
-			WSACleanup();
-			return 1;
-		}
-		printf("Bytes sent: %ld\n", Result);
+		closesocket(ConnectSocket);
+		
+		ConnectSocket = INVALID_SOCKET;
+		//WSACleanup();
 	}
 	/// 5. close & cleanup
 	closesocket(ConnectSocket);
