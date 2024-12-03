@@ -113,7 +113,7 @@ int packet_encode(char Packet[], const int MaxBufferSize, const char PacketID[],
 		return -1; // Error: Not enough space
 	}
 
-	sprintf_s(Packet, MaxBufferSize, "<%s %03d %s>", PacketID, PacketLength, PacketData);
+	sprintf_s(Packet, MaxBufferSize, "<%s %s>", PacketID, PacketData);
 	return PacketLength;
 }
 
@@ -136,6 +136,7 @@ int packet_decode(const char Packet[], char PacketID[], int& PacketIDLength, cha
 	++Pos;
 	strcpy(PacketData, &Packet[Pos]);
 	PacketDataLength = strlen(PacketData);
+	PacketData[PacketDataLength - 1] = '\0';
 	return strlen(Packet);
 }
 
@@ -164,7 +165,15 @@ int main(int argc, char** argv)
 	char Packet[BUFSIZE];
 
 	char SINGLE[BUFSIZE];
+
+
+	char PacketID[BUFSIZE];
+	char PacketData[BUFSIZE];
+
 	int buffsize = BUFSIZE;
+
+	int PacketIDLength = 0;
+	int PacketDataLength = 0;
 
 	// Add data to the packet
 	packet_add_data(PacketBuffer, "HEIGHT", 40);
@@ -181,6 +190,11 @@ int main(int argc, char** argv)
 
 	// Print the final packet
 	printf("Packet: %s\n", Packet);
+
+	packet_decode(Packet, PacketID, PacketIDLength, PacketData, PacketDataLength);
+	printf("Packet ID: [%d]\n", packet_decode(Packet, PacketID, PacketIDLength, PacketData, PacketDataLength));
+	printf("Packet ID: [%s]\n", PacketID);
+	printf("Packet ID: [%s]\n", PacketData);
 	////
 
 
