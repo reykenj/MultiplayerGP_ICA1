@@ -127,14 +127,14 @@ int main(int argc, char** argv)
 	int          Return;
 
 
-	// PACKET TESTING 
-	char PacketBuffer[BUFSIZE] = { 0 }; // Initialize the buffer
-	packet_add_data(PacketBuffer, "ATK", 40);
-	packet_add_data(PacketBuffer, "DEF", 50);
+	//// PACKET TESTING 
+	//char PacketBuffer[BUFSIZE] = { 0 }; // Initialize the buffer
+	//packet_add_data(PacketBuffer, "ATK", 40);
+	//packet_add_data(PacketBuffer, "DEF", 50);
 
-	// Print the resulting packet
-	printf("Packet: %s\n", PacketBuffer);
-	//
+	//// Print the resulting packet
+	//printf("Packet: %s\n", PacketBuffer);
+	////
 
 
 	printf("Destination IP Address [%s], Port number [%d]\n", IPAddress, Port);

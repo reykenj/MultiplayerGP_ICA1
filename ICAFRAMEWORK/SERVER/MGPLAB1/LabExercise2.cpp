@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <winsock2.h>
+#include <iostream>
 
 /// Link with ws2_32.lib
 #pragma comment(lib, "Ws2_32.lib")
@@ -71,14 +72,30 @@ void whisper_to_one(fd_set ReadFds, char Message[], int MessageLength, SOCKET Cl
 	char WhisperMessage[BUFSIZE];
 	int WhisperMessageLength;
 
-	for (MsgPos = 1; MsgPos < MessageLength; ++MsgPos)
+	bool GetOutOfLoop = false;
+
+	//printf("Using port number : [%s]\n", Message);
+	for (int i = 1; i < MessageLength; i++)
 	{
-		if (' ' == Message[MsgPos])
-		{
-			TargetSocket[MsgPos - 1] = '\0';
-			break;
+		//printf("dAAHHH: [%s]\n", Message);
+		//std::cout << (Message[MsgPos]) << std::endl;
+
+		if (!GetOutOfLoop) {
+			MsgPos = i;
+			if (' ' == Message[MsgPos])
+			{
+				TargetSocket[MsgPos - 1] = '\0';
+				GetOutOfLoop = true;
+			}
+			if (!GetOutOfLoop) {
+				TargetSocket[MsgPos - 1] = Message[MsgPos];
+			}
 		}
-		TargetSocket[MsgPos - 1] = Message[MsgPos];
+		else {
+			if (Message[i] == '\r') {
+				Message[i] = '\0';
+			}
+		}
 	}
 	if (MsgPos == MessageLength)
 	{
