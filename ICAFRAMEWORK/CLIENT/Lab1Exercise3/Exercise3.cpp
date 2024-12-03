@@ -19,42 +19,53 @@
 
 int packet_add_data(char Buffer[], const char DataName[], const int Value)
 {
-	sprintf_s(Buffer, _msize(Buffer), "%s %s=%d", Buffer, DataName, Value);
+	size_t currentLength = strlen(Buffer);
+	size_t maxLength = BUFSIZE;
+
+	// Ensure no overflow occurs
+	if (currentLength + strlen(DataName) + 20 >= maxLength) // +20 for " =VALUE" and null terminator
+	{
+		return -1; // Error: Not enough space
+	}
+
+	sprintf_s(Buffer + currentLength, maxLength - currentLength, " %s=%d", DataName, Value);
+	//	sprintf_s(Buffer, _msize(Buffer), "%s %s=%d", Buffer, DataName, Value);
 	return strlen(Buffer);
 }
 
 int packet_add_data(char Buffer[], const char DataName[], const char Value[])
 {
-	sprintf_s(Buffer, _msize(Buffer), "%s %s=\"%s\"", Buffer, DataName, Value);
+	size_t currentLength = strlen(Buffer);
+	size_t maxLength = BUFSIZE;
+
+	// Ensure no overflow occurs
+	if (currentLength + strlen(DataName) + strlen(Value) + 10 >= maxLength) // +10 for ` ="VALUE"` and null terminator
+	{
+		return -1; // Error: Not enough space
+	}
+
+	sprintf_s(Buffer + currentLength, maxLength - currentLength, " %s=%s", DataName, Value);
 	return strlen(Buffer);
 }
 
 int packet_parser_get_data(const char Packet[], const char DataName[], std::string& DataString)
 {
-	const char* Str;
-	if ((Str = strstr(Packet, DataName)) == NULL)
+	const char* Str = strstr(Packet, DataName);
+	if (Str == NULL)
 	{
-		return 0;
-	}
-	const char* Pos = Str;
-	int Len = strlen(Pos);
-	for (int i = 0; i < Len; ++i)
-	{
-		if (Pos[i] == '=')
-		{
-			for (int j = i + 1; j < Len; ++j)
-			{
-				if (Pos[j] == ' ' || Pos[j] == '\n' || Pos[j] == '\0')
-				{
-					break;
-				}
-				DataString.push_back(Pos[j]);
-			}
-			return atoi(DataString.c_str());
-		}
+		return 0; // DataName not found
 	}
 
-	return 0;
+	const char* Pos = Str + strlen(DataName);
+	while (*Pos == ' ' || *Pos == '=') Pos++; // Skip spaces and '='
+
+	DataString.clear();
+	while (*Pos != ' ' && *Pos != '\n' && *Pos != '\0')
+	{
+		DataString.push_back(*Pos++);
+	}
+
+	return DataString.length(); // Return the length of the parsed string
 }
 
 int packet_parser_data(const char Packet[], const char DataName[])
@@ -68,20 +79,41 @@ int packet_parser_data(const char Packet[], const char DataName[])
 int packet_parser_data(const char Packet[], const char DataName[], char Buffer[], int& BufferSize)
 {
 	std::string DataString;
-	int ReturnLength;
-	ReturnLength = packet_parser_get_data(Packet, DataName, DataString);
-	if (ReturnLength > BufferSize) {
-		ReturnLength = BufferSize;
+	int ReturnLength = packet_parser_get_data(Packet, DataName, DataString);
+
+	if (ReturnLength > 0)
+	{
+		if (ReturnLength >= BufferSize)
+		{
+			ReturnLength = BufferSize - 1; // Ensure space for null terminator
+		}
+
+		strncpy(Buffer, DataString.c_str(), ReturnLength);
+		Buffer[ReturnLength] = '\0'; // Null-terminate the buffer
+		BufferSize = ReturnLength;
 	}
-	strcpy_s(Buffer, BufferSize, DataString.c_str());
-	BufferSize = ReturnLength;
+	else
+	{
+		Buffer[0] = '\0'; // Clear the buffer if no data was found
+		BufferSize = 0;
+	}
+
 	return ReturnLength;
 }
 
 int packet_encode(char Packet[], const int MaxBufferSize, const char PacketID[], const char PacketData[])
 {
-	int PacketLength = strlen(PacketID) + strlen(PacketData) + 7;
-	sprintf_s(Packet, _msize(Packet), "<%s %03d %s>", PacketID, PacketLength, PacketData);
+	// Reset buffer to avoid leftover data
+	memset(Packet, 0, MaxBufferSize);
+
+	// Ensure no overflow occurs
+	int PacketLength = strlen(PacketID) + strlen(PacketData) + 7; // "<ID XXX DATA>"
+	if (PacketLength >= MaxBufferSize)
+	{
+		return -1; // Error: Not enough space
+	}
+
+	sprintf_s(Packet, MaxBufferSize, "<%s %03d %s>", PacketID, PacketLength, PacketData);
 	return PacketLength;
 }
 
@@ -128,12 +160,27 @@ int main(int argc, char** argv)
 
 
 	//// PACKET TESTING 
-	//char PacketBuffer[BUFSIZE] = { 0 }; // Initialize the buffer
-	//packet_add_data(PacketBuffer, "ATK", 40);
-	//packet_add_data(PacketBuffer, "DEF", 50);
+	char PacketBuffer[BUFSIZE] = { 0 }; // Initialize the buffer
+	char Packet[BUFSIZE];
 
-	//// Print the resulting packet
-	//printf("Packet: %s\n", PacketBuffer);
+	char SINGLE[BUFSIZE];
+	int buffsize = BUFSIZE;
+
+	// Add data to the packet
+	packet_add_data(PacketBuffer, "HEIGHT", 40);
+	packet_add_data(PacketBuffer, "SINGLE", "No");
+
+	// Encode the packet
+	int PacketLength = packet_encode(Packet, BUFSIZE, "CHRSTA", PacketBuffer);
+
+	// Test the string parser
+	packet_parser_data(Packet, "SINGLE", SINGLE, buffsize);
+
+	// Print the parsed value
+	printf("Testing Parser: SINGLE = %s\n", SINGLE);
+
+	// Print the final packet
+	printf("Packet: %s\n", Packet);
 	////
 
 
