@@ -178,28 +178,28 @@ int main(int argc, char** argv)
 	int SessionID = NULL;
 	int Height = 40;
 	char Single[BUFSIZE] = "No";
-
+	int PacketLength;
 
 	// Add data to the packet
 	packet_add_data(PacketBuffer, "HEIGHT", Height);
 	packet_add_data(PacketBuffer, "SINGLE", Single);
 
 	// Encode the packet
-	int PacketLength = packet_encode(Packet, BUFSIZE, "CHRSTA", PacketBuffer);
+	//int PacketLength = packet_encode(Packet, BUFSIZE, "CHRSTA", PacketBuffer);
 
-	// Test the string parser
-	packet_parser_data(Packet, "SINGLE", SINGLE, buffsize);
+	//// Test the string parser
+	//packet_parser_data(Packet, "SINGLE", SINGLE, buffsize);
 
 	// Print the parsed value
-	printf("Testing Parser: SINGLE = %s\n", SINGLE);
+	/*printf("Testing Parser: SINGLE = %s\n", SINGLE);*/
 
 	// Print the final packet
-	printf("Packet: %s\n", Packet);
+	/*printf("Packet: %s\n", Packet);*/
 
-	packet_decode(Packet, PacketID, PacketIDLength, PacketData, PacketDataLength);
-	printf("Packet ID: [%d]\n", packet_decode(Packet, PacketID, PacketIDLength, PacketData, PacketDataLength));
-	printf("Packet ID: [%s]\n", PacketID);
-	printf("Packet ID: [%s]\n", PacketData);
+	//packet_decode(Packet, PacketID, PacketIDLength, PacketData, PacketDataLength);
+	//printf("Packet ID: [%d]\n", packet_decode(Packet, PacketID, PacketIDLength, PacketData, PacketDataLength));
+	//printf("Packet ID: [%s]\n", PacketID);
+	//printf("Packet ID: [%s]\n", PacketData);
 	////
 
 
@@ -255,6 +255,11 @@ int main(int argc, char** argv)
 				putchar('\n');
 				MessageLen++;
 				Message[MessageLen] = '\0';
+				if (!strncmp(Message, "/send packet", 12)) {
+					printf("\n sending packet");
+					strcpy(Message, Packet);
+					MessageLen = strlen(Message);
+				}
 
 				Return = send(ConnectSocket, Message, MessageLen, 0);
 				if (Return == SOCKET_ERROR)
@@ -312,12 +317,16 @@ int main(int argc, char** argv)
 				{ // Message received.
 					printf("Bytes received   : %d\n", Return);
 					printf("Message received : %s\n", Message);
-					printf("enter messages : ");
+
 					char* cleaned = strtok(Message, "\r\n");
 					if (SessionID == NULL) {
 						printf("Number Extracted : %d\n", sscanf(cleaned, "<SessionID: %d", &SessionID));
 						printf("SessionID Extracted : %d\n", SessionID);
+						packet_add_data(PacketBuffer, "SESSIONID", SessionID);
+						packet_encode(Packet, BUFSIZE, "CHRSTA", PacketBuffer);
 					}
+
+					printf("enter messages : ");
 				}
 			}
 		}
