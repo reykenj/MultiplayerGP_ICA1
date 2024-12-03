@@ -14,7 +14,7 @@ void send_welcome_message(SOCKET ClientSocket)
 	char WelcomeMessage[100];
 	int WelcomeMessageLength;
 
-	sprintf_s(WelcomeMessage, "<Welcome to my I/O multiplexing server! Your Session ID is %d>", ClientSocket);
+	sprintf_s(WelcomeMessage, "<SessionID: %d. Welcome to my I/O multiplexing server!>", ClientSocket);
 	WelcomeMessageLength = strlen(WelcomeMessage);
 
 	send(ClientSocket, WelcomeMessage, WelcomeMessageLength, 0);

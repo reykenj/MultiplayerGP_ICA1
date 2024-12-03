@@ -175,6 +175,8 @@ int main(int argc, char** argv)
 	int PacketIDLength = 0;
 	int PacketDataLength = 0;
 
+	int SessionID = NULL;
+
 	// Add data to the packet
 	packet_add_data(PacketBuffer, "HEIGHT", 40);
 	packet_add_data(PacketBuffer, "SINGLE", "No");
@@ -223,6 +225,8 @@ int main(int argc, char** argv)
 	///----------------------
 	/// Connect to server.
 	Return = connect(ConnectSocket, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr));
+	printf("%d \n", ConnectSocket);
+
 	if (Return == SOCKET_ERROR)
 	{
 		closesocket(ConnectSocket);
@@ -306,6 +310,11 @@ int main(int argc, char** argv)
 					printf("Bytes received   : %d\n", Return);
 					printf("Message received : %s\n", Message);
 					printf("enter messages : ");
+					char* sanitizedMessage = strtok(Message, "\r\n");
+					if (SessionID == NULL) {
+						printf("Number Extracted : %d\n", sscanf(sanitizedMessage, "<SessionID: %d", &SessionID));
+						printf("SessionID Extracted : %d\n", SessionID);
+					}
 				}
 			}
 		}
