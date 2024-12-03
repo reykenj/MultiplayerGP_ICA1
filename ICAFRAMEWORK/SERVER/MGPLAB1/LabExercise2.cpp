@@ -1,3 +1,5 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include <stdio.h>
 #include <string.h>
 #include <winsock2.h>
@@ -60,11 +62,10 @@ void send_notice_message(fd_set ReadFds, SOCKET ClientSocket)
 	}
 }
 
-void whisper_to_one(fd_set ReadFds, char Message[], int MessageLength, SOCKET ClientSocket)
+void whisper_to_one(fd_set ReadFds, char Message[], int MessageLength, SOCKET ClientSocket, int TargetSocket)
 {
 	int MsgPos;
 	int FD_Index;
-	char TargetSocket[BUFSIZ];
 	char FailMessage[] = "<Fail to send a message>";
 	int FailMessageLength = strlen(FailMessage);
 	char SuccessMessage[BUFSIZE];
@@ -72,46 +73,15 @@ void whisper_to_one(fd_set ReadFds, char Message[], int MessageLength, SOCKET Cl
 	char WhisperMessage[BUFSIZE];
 	int WhisperMessageLength;
 
-	bool GetOutOfLoop = false;
-
-	//printf("Using port number : [%s]\n", Message);
-	for (int i = 1; i < MessageLength; i++)
-	{
-		//printf("dAAHHH: [%s]\n", Message);
-		//std::cout << (Message[MsgPos]) << std::endl;
-
-		if (!GetOutOfLoop) {
-			MsgPos = i;
-			if (' ' == Message[MsgPos])
-			{
-				TargetSocket[MsgPos - 1] = '\0';
-				GetOutOfLoop = true;
-			}
-			if (!GetOutOfLoop) {
-				TargetSocket[MsgPos - 1] = Message[MsgPos];
-			}
-		}
-		else {
-			if (Message[i] == '\r') {
-				Message[i] = '\0';
-			}
-		}
-	}
-	if (MsgPos == MessageLength)
-	{
-		send(ClientSocket, FailMessage, FailMessageLength, 0);
-		return;
-	}
-
 	for (FD_Index = 1; FD_Index < ReadFds.fd_count; ++FD_Index)
 	{
-		if (ReadFds.fd_array[FD_Index] == atoi(TargetSocket))
+		if (ReadFds.fd_array[FD_Index] == TargetSocket)
 		{
-			sprintf_s(WhisperMessage, "<Sender %d sent:%s>", ClientSocket, &Message[MsgPos + 1]);
+			sprintf_s(WhisperMessage, "<Sender %d sent:%s>", ClientSocket, Message);
 			WhisperMessageLength = strlen(WhisperMessage);
 			send(ReadFds.fd_array[FD_Index], WhisperMessage, WhisperMessageLength, 0);
 
-			sprintf_s(SuccessMessage, "<Message send to %s>", TargetSocket);
+			sprintf_s(SuccessMessage, "<Message send to %d>", TargetSocket);
 			SuccessMessageLength = strlen(SuccessMessage);
 			send(ClientSocket, SuccessMessage, SuccessMessageLength, 0);
 
@@ -242,9 +212,15 @@ int main(int argc, char** argv)
 					}
 					else
 					{ // Message recevied.
-						if ('/' == Message[0])
+						int ClientSocketNumber = NULL;
+
+						char whispherMessage[BUFSIZE];
+						char* cleaned = strtok(Message, "\r\n");
+						
+
+						if (sscanf(cleaned, "/w %d %[^\n]", &ClientSocketNumber, whispherMessage) > 0)
 						{
-							whisper_to_one(ReadFds, Message, Return, TempFds.fd_array[Index]);
+							whisper_to_one(ReadFds, whispherMessage, Return, TempFds.fd_array[Index], ClientSocketNumber);
 						}
 						else
 						{

@@ -176,10 +176,13 @@ int main(int argc, char** argv)
 	int PacketDataLength = 0;
 
 	int SessionID = NULL;
+	int Height = 40;
+	char Single[BUFSIZE] = "No";
+
 
 	// Add data to the packet
-	packet_add_data(PacketBuffer, "HEIGHT", 40);
-	packet_add_data(PacketBuffer, "SINGLE", "No");
+	packet_add_data(PacketBuffer, "HEIGHT", Height);
+	packet_add_data(PacketBuffer, "SINGLE", Single);
 
 	// Encode the packet
 	int PacketLength = packet_encode(Packet, BUFSIZE, "CHRSTA", PacketBuffer);
@@ -310,9 +313,9 @@ int main(int argc, char** argv)
 					printf("Bytes received   : %d\n", Return);
 					printf("Message received : %s\n", Message);
 					printf("enter messages : ");
-					char* sanitizedMessage = strtok(Message, "\r\n");
+					char* cleaned = strtok(Message, "\r\n");
 					if (SessionID == NULL) {
-						printf("Number Extracted : %d\n", sscanf(sanitizedMessage, "<SessionID: %d", &SessionID));
+						printf("Number Extracted : %d\n", sscanf(cleaned, "<SessionID: %d", &SessionID));
 						printf("SessionID Extracted : %d\n", SessionID);
 					}
 				}
