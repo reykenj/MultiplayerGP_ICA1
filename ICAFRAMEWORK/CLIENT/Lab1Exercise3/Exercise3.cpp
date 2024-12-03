@@ -1,4 +1,5 @@
 #define _WINSOCK_DEPRECATED_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <string.h>
 #include <winsock2.h>
@@ -10,6 +11,51 @@
 #define BUFSIZE     1024
 #define PORT_NUMBER 7890
 #define IP_ADDRESS  "127.0.0.1"
+
+
+
+
+
+int packet_add_data(char Buffer[], const char DataName[], const int Value) {
+
+	char valueStr[20]; // Temporary buffer to hold the string representation of Value
+	int totalLength;
+
+	// Convert the integer value to a string
+	sprintf(valueStr, "%d", Value);
+
+	// Add DataName to the buffer
+	strncat(Buffer, DataName, sizeof(Buffer) );
+	strncat(Buffer, "=", sizeof(Buffer) );
+
+	// Add the value as a string to the buffer
+	strncat(Buffer, valueStr, sizeof(Buffer));
+
+	// Calculate the total length of the packet
+	totalLength = strlen(Buffer);
+
+	// Return the total length
+	return totalLength;
+}
+int packet_add_data(char Buffer[], const char DataName[], const char Value[]) {
+
+	int totalLength;
+
+	// Add DataName to the buffer
+	// - strlen(Buffer) - 1
+	strncat(Buffer, DataName, sizeof(Buffer));
+	strncat(Buffer, "=", sizeof(Buffer));
+
+	// Add the value as a string to the buffer
+	strncat(Buffer, Value, sizeof(Buffer));
+
+	// Calculate the total length of the packet
+	totalLength = strlen(Buffer);
+
+	// Return the total length
+	return totalLength;
+}
+
 
 
 int main(int argc, char** argv)
@@ -28,6 +74,17 @@ int main(int argc, char** argv)
 	char         Message[BUFSIZE];
 	int          MessageLen;
 	int          Return;
+
+
+	// PACKET TESTING 
+	char PacketBuffer[BUFSIZE] = { 0 }; // Initialize the buffer
+
+	packet_add_data(PacketBuffer, "DEF", 50);
+
+	// Print the resulting packet
+	printf("Packet: %s\n", PacketBuffer);
+	//
+
 
 	printf("Destination IP Address [%s], Port number [%d]\n", IPAddress, Port);
 
