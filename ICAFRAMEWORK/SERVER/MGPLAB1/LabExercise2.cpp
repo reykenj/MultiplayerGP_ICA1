@@ -277,6 +277,9 @@ int main(int argc, char** argv)
 	char         Message[BUFSIZE];
 	int          Return;
 
+
+	bool RoomMasterPresent = true;
+
 	std::vector<std::array<char, BUFSIZE>> PacketList;
 
 	if (2 == argc)
@@ -343,10 +346,15 @@ int main(int argc, char** argv)
 			{
 				if (TempFds.fd_array[Index] == ServerSocket)
 				{ // New connection requested by new client.
+					if (ReadFds.fd_count > 1) {
+						RoomMasterPresent = true;
+					}
 					ClientSocket = accept(ServerSocket, (SOCKADDR*)&ClientAddr, &ClientLen);
 					FD_SET(ClientSocket, &ReadFds);
 					printf("New Client Accepted : Socket Handle [%d]\n", ClientSocket);
-
+					if (RoomMasterPresent && ReadFds.fd_count == 2) {
+						printf("FOUND ROOM MASTER: [%d]\n", ClientSocket);
+					}
 					send_welcome_message(ClientSocket);
 					session_info_message(ReadFds, ClientSocket);
 					send_notice_message(ReadFds, ClientSocket);
