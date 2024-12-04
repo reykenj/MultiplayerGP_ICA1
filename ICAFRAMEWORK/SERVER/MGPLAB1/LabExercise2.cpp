@@ -359,12 +359,21 @@ int main(int argc, char** argv)
 						RoomMasterSessionID = ClientSocket;
 						printf("FOUND ROOM MASTER: [%d]\n", RoomMasterSessionID);
 					}
-					send_welcome_message(ClientSocket);
-					session_info_message(ReadFds, ClientSocket);
-					send_notice_message(ReadFds, ClientSocket);
 					int PasswordLength = strlen(Password);
 					if (PasswordLength > 0) {
 						unverified_userlist.push_back(ClientSocket);
+
+						char GivePasswordMessage[100];
+						int GivePasswordMessageLength;
+						sprintf_s(GivePasswordMessage, "\n <MESSAGE PASSWORD TO ENTER SERVER:> \n");
+						GivePasswordMessageLength = strlen(GivePasswordMessage);
+
+						send(ClientSocket, GivePasswordMessage, GivePasswordMessageLength, 0);
+					}
+					else {
+						send_welcome_message(ClientSocket);
+						session_info_message(ReadFds, ClientSocket);
+						send_notice_message(ReadFds, ClientSocket);
 					}
 				}
 				else
@@ -409,7 +418,7 @@ int main(int argc, char** argv)
 								char LeaveMessage[100];
 								int LeaveMessageLength;
 
-								sprintf_s(LeaveMessage, "<Leave Accepted>");
+								sprintf_s(LeaveMessage, "<Leave Accepted>\n");
 								LeaveMessageLength = strlen(LeaveMessage);
 
 								send(TempFds.fd_array[Index], LeaveMessage, LeaveMessageLength, 0);
@@ -471,17 +480,22 @@ int main(int argc, char** argv)
 
 							char PasswordCorrectMessage[100];
 							int PasswordCorrectMessageLength;
-							sprintf_s(PasswordCorrectMessage, "<PASSWORD IS CORRECT>");
+							sprintf_s(PasswordCorrectMessage, "<PASSWORD IS CORRECT>\n");
 							PasswordCorrectMessageLength = strlen(PasswordCorrectMessage);
 
 							char PasswordWrongMessage[100];
 							int PasswordWrongMessageLength;
-							sprintf_s(PasswordWrongMessage, "<PASSWORD IS INCORRECT>");
+							sprintf_s(PasswordWrongMessage, "<PASSWORD IS INCORRECT>\n");
 							PasswordWrongMessageLength = strlen(PasswordWrongMessage);
 
 							if (!strcmp(Password, cleaned)) {
 								unverified_userlist.erase(unverified_userlist.begin() + UnverifiedIndex);
 								send(TempFds.fd_array[Index], PasswordCorrectMessage, PasswordCorrectMessageLength, 0);
+
+								send_welcome_message(TempFds.fd_array[Index]);
+								session_info_message(ReadFds, TempFds.fd_array[Index]);
+								send_notice_message(ReadFds, TempFds.fd_array[Index]);
+
 							}
 							else {
 								send(TempFds.fd_array[Index], PasswordWrongMessage, PasswordWrongMessageLength, 0);
