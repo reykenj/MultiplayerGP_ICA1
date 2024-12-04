@@ -278,7 +278,7 @@ int main(int argc, char** argv)
 	char         Message[BUFSIZE];
 	int          Return;
 
-
+	char Password[BUFSIZE] = { 0 };
 	bool RoomMasterPresent = true;
 
 	std::vector<std::array<char, BUFSIZE>> PacketList;
@@ -360,6 +360,9 @@ int main(int argc, char** argv)
 					send_welcome_message(ClientSocket);
 					session_info_message(ReadFds, ClientSocket);
 					send_notice_message(ReadFds, ClientSocket);
+					//int PasswordLength = strlen(Password);
+					//if()
+					//strlen(Password)
 				}
 				else
 				{ // Something to read from socket.
@@ -434,6 +437,12 @@ int main(int argc, char** argv)
 								closesocket(ClientSocketNumber);
 								printf("Connection closed :Socket Handle [%d]\n", ClientSocketNumber);
 								FD_CLR(ClientSocketNumber, &ReadFds);
+							}
+						}
+						else if (sscanf(cleaned, "/setpassword %[^\n]", getmessage) > 0)
+						{
+							if (RoomMasterSessionID == TempFds.fd_array[Index]) {
+								strcpy(Password, getmessage);
 							}
 						}
 						else if (!strncmp("/help", cleaned, 5))
