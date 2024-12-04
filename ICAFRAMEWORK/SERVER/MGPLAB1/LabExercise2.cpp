@@ -269,6 +269,7 @@ int main(int argc, char** argv)
 	unsigned int Index;
 	int          ClientLen = sizeof(SOCKADDR_IN);
 	SOCKET       ClientSocket;
+	int       RoomMasterSessionID;
 	SOCKADDR_IN  ClientAddr;
 
 	fd_set       ReadFds, TempFds;
@@ -353,7 +354,8 @@ int main(int argc, char** argv)
 					FD_SET(ClientSocket, &ReadFds);
 					printf("New Client Accepted : Socket Handle [%d]\n", ClientSocket);
 					if (RoomMasterPresent && ReadFds.fd_count == 2) {
-						printf("FOUND ROOM MASTER: [%d]\n", ClientSocket);
+						RoomMasterSessionID = ClientSocket;
+						printf("FOUND ROOM MASTER: [%d]\n", RoomMasterSessionID);
 					}
 					send_welcome_message(ClientSocket);
 					session_info_message(ReadFds, ClientSocket);
