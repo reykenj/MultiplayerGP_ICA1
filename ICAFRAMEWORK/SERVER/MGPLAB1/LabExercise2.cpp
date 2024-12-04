@@ -346,6 +346,22 @@ int main(int argc, char** argv)
 						{
 							whisper_to_one(ReadFds, getmessage, Return, TempFds.fd_array[Index], ClientSocketNumber);
 						}
+						if (!strncmp("/leave", cleaned, 6))
+						{
+
+							char LeaveMessage[100];
+							int LeaveMessageLength;
+
+							sprintf_s(LeaveMessage, "<Leave Accepted>");
+							LeaveMessageLength = strlen(LeaveMessage);
+
+							send(TempFds.fd_array[Index], LeaveMessage, LeaveMessageLength, 0);
+
+
+							closesocket(TempFds.fd_array[Index]);
+							printf("Connection closed :Socket Handle [%d]\n", TempFds.fd_array[Index]);
+							FD_CLR(TempFds.fd_array[Index], &ReadFds);
+						}
 						else if (!strncmp("<CHRSTA", cleaned, 7))
 						{
 							printf("RECIEVED PACKET\n");

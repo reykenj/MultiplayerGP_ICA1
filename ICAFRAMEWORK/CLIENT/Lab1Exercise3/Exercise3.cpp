@@ -213,122 +213,150 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	ConnectSocket = socket(AF_INET, SOCK_STREAM, 0);
-	if (INVALID_SOCKET == ConnectSocket)
-	{
-		printf("socket() error");
-		return 1;
-	}
-
-	///----------------------
-	/// The sockaddr_in structure specifies the address family,
-	/// IP address, and port of the server to be connected to.
-	ServerAddr.sin_family = AF_INET;
-	ServerAddr.sin_port = htons(Port);
-	ServerAddr.sin_addr.s_addr = inet_addr(IPAddress);
-
-	///----------------------
-	/// Connect to server.
-	Return = connect(ConnectSocket, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr));
-	printf("%d \n", ConnectSocket);
-
-	if (Return == SOCKET_ERROR)
-	{
-		closesocket(ConnectSocket);
-		printf("Unable to connect to server: %ld\n", WSAGetLastError());
-		WSACleanup();
-		return 1;
-	}
-
-	FD_ZERO(&ReadFds);
-	FD_SET(ConnectSocket, &ReadFds);
 
 
-	printf("enter messages : ");
-	memset(Message, '\0', BUFSIZE);
-	MessageLen = 0;
 	while (1)
 	{
-		if (_kbhit())
-		{ // To check keyboard input.
-			Message[MessageLen] = _getch();
-			if (('\n' == Message[MessageLen]) || ('\r' == Message[MessageLen]))
-			{ // Send the message to server.
-				putchar('\n');
-				MessageLen++;
-				Message[MessageLen] = '\0';
-				if (!strncmp(Message, "/send packet", 12)) {
-					printf("\n sending packet");
-					strcpy(Message, Packet);
-					MessageLen = strlen(Message);
-				}
+		// Allow the user to choose a new IP and port
+		printf("\nDo you want to connect to a different server? (y/n): ");
+		char choice;
+		scanf(" %c", &choice);
 
-				Return = send(ConnectSocket, Message, MessageLen, 0);
-				if (Return == SOCKET_ERROR)
+		if (choice == 'y' || choice == 'Y')
+		{
+			printf("Enter new IP address (default %s): ", IP_ADDRESS);
+			char newIP[16];
+			scanf("%15s", newIP);
+			strncpy(IPAddress, newIP, sizeof(IPAddress));
+
+			printf("Enter new Port (default %d): ", PORT_NUMBER);
+			int newPort;
+			scanf("%d", &newPort);
+			Port = newPort;
+
+			printf("Connecting to server [%s:%d]\n", IPAddress, Port);
+		}
+
+		ConnectSocket = socket(AF_INET, SOCK_STREAM, 0);
+		if (INVALID_SOCKET == ConnectSocket)
+		{
+			printf("socket() error");
+			return 1;
+		}
+
+		// Server address setup
+		ServerAddr.sin_family = AF_INET;
+		ServerAddr.sin_port = htons(Port);
+		ServerAddr.sin_addr.s_addr = inet_addr(IPAddress);
+
+		// Attempt to connect to the server
+		Return = connect(ConnectSocket, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr));
+		if (Return == SOCKET_ERROR)
+		{
+			closesocket(ConnectSocket);
+			printf("Unable to connect to server: %ld\n", WSAGetLastError());
+			WSACleanup();
+			return 1;
+		}
+
+		FD_ZERO(&ReadFds);
+		FD_SET(ConnectSocket, &ReadFds);
+
+		printf("Connected to server [%s:%d]. Enter messages:\n", IPAddress, Port);
+		memset(Message, '\0', BUFSIZE);
+		MessageLen = 0;
+		while (1)
+		{
+			if (_kbhit())
+			{ // To check keyboard input.
+				Message[MessageLen] = _getch();
+				if (('\n' == Message[MessageLen]) || ('\r' == Message[MessageLen]))
+				{ // Send the message to server.
+					putchar('\n');
+					MessageLen++;
+					Message[MessageLen] = '\0';
+					if (!strncmp(Message, "/send packet", 12)) {
+						printf("\n sending packet");
+						strcpy(Message, Packet);
+						MessageLen = strlen(Message);
+					}
+
+					Return = send(ConnectSocket, Message, MessageLen, 0);
+					if (Return == SOCKET_ERROR)
+					{
+						printf("send failed: %d\n", WSAGetLastError());
+						closesocket(ConnectSocket);
+						WSACleanup();
+						return 1;
+					}
+					printf("Bytes Sent: %ld\n", Return);
+
+					MessageLen = 0;
+					memset(Message, '\0', BUFSIZE);
+				}
+				else
 				{
-					printf("send failed: %d\n", WSAGetLastError());
-					closesocket(ConnectSocket);
-					WSACleanup();
-					return 1;
+					putchar(Message[MessageLen]);
+					MessageLen++;
 				}
-				printf("Bytes Sent: %ld\n", Return);
-
-				MessageLen = 0;
-				memset(Message, '\0', BUFSIZE);
 			}
 			else
 			{
-				putchar(Message[MessageLen]);
-				MessageLen++;
-			}
-		}
-		else
-		{
-			TempFds = ReadFds;
-			Timeout.tv_sec = 0;
-			Timeout.tv_usec = 1000;
+				TempFds = ReadFds;
+				Timeout.tv_sec = 0;
+				Timeout.tv_usec = 1000;
 
-			if (SOCKET_ERROR == (Return = select(0, &TempFds, 0, 0, &Timeout)))
-			{ // Select() function returned error.
-				closesocket(ConnectSocket);
-				printf("select() error\n");
-				return 1;
-			}
-			else if (0 > Return)
-			{
-				printf("Select returned error!\n");
-			}
-			else if (0 < Return)
-			{
-				memset(Message, '\0', BUFSIZE);
-				printf("Select Processed... Something to read\n");
-				Return = recv(ConnectSocket, Message, BUFSIZE, 0);
-				if (0 > Return)
-				{ // recv() function returned error.
+				if (SOCKET_ERROR == (Return = select(0, &TempFds, 0, 0, &Timeout)))
+				{ // Select() function returned error.
 					closesocket(ConnectSocket);
-					printf("Exceptional error :Socket Handle [%d]\n", ConnectSocket);
+					printf("select() error\n");
 					return 1;
 				}
-				else if (0 == Return)
-				{ // Connection closed message has arrived.
-					closesocket(ConnectSocket);
-					printf("Connection closed :Socket Handle [%d]\n", ConnectSocket);
-					return 0;
+				else if (0 > Return)
+				{
+					printf("Select returned error!\n");
 				}
-				else
-				{ // Message received.
-					printf("Bytes received   : %d\n", Return);
-					printf("Message received : %s\n", Message);
-
-					char* cleaned = strtok(Message, "\r\n");
-					if (SessionID == NULL) {
-						printf("Number Extracted : %d\n", sscanf(cleaned, "<SessionID: %d", &SessionID));
-						printf("SessionID Extracted : %d\n", SessionID);
-						packet_add_data(PacketBuffer, "SESSIONID", SessionID);
-						packet_encode(Packet, BUFSIZE, "CHRSTA", PacketBuffer);
+				else if (0 < Return)
+				{
+					memset(Message, '\0', BUFSIZE);
+					printf("Select Processed... Something to read\n");
+					Return = recv(ConnectSocket, Message, BUFSIZE, 0);
+					if (0 > Return)
+					{ // recv() function returned error.
+						closesocket(ConnectSocket);
+						printf("Exceptional error :Socket Handle [%d]\n", ConnectSocket);
+						return 1;
 					}
+					else if (0 == Return)
+					{ // Connection closed message has arrived.
+						//closesocket(ConnectSocket);
+						//printf("Connection closed :Socket Handle [%d]\n", ConnectSocket);
+						//return 0;
 
-					printf("enter messages : ");
+						closesocket(ConnectSocket);
+						ConnectSocket = INVALID_SOCKET;
+						break;
+					}
+					else
+					{ // Message received.
+						printf("Bytes received   : %d\n", Return);
+						printf("Message received : %s\n", Message);
+
+						char* cleaned = strtok(Message, "\r\n");
+						if (SessionID == NULL) {
+							printf("Number Extracted : %d\n", sscanf(cleaned, "<SessionID: %d", &SessionID));
+							printf("SessionID Extracted : %d\n", SessionID);
+							packet_add_data(PacketBuffer, "SESSIONID", SessionID);
+							packet_encode(Packet, BUFSIZE, "CHRSTA", PacketBuffer);
+						}
+						//else if (strcmp("<Leave Accepted>", cleaned)) {
+						//	closesocket(ConnectSocket);
+						//	ConnectSocket = INVALID_SOCKET;
+						//	break;
+						//}
+
+						printf("enter messages : ");
+					}
 				}
 			}
 		}
