@@ -60,7 +60,7 @@ int packet_parser_get_data(const char Packet[], const char DataName[], std::stri
 	while (*Pos == ' ' || *Pos == '=') Pos++; // Skip spaces and '='
 
 	DataString.clear();
-	while (*Pos != ' ' && *Pos != '\n' && *Pos != '\0')
+	while (*Pos != ' ' && *Pos != '\n' && *Pos != '\0' && *Pos != '>')
 	{
 		DataString.push_back(*Pos++);
 	}
@@ -177,21 +177,23 @@ int main(int argc, char** argv)
 
 	int SessionID = NULL;
 	int Height = 40;
+	int Weight = 10000;
 	char Single[BUFSIZE] = "No";
 	int PacketLength;
 
 	// Add data to the packet
 	packet_add_data(PacketBuffer, "HEIGHT", Height);
+	packet_add_data(PacketBuffer, "WEIGHT", Weight);
 	packet_add_data(PacketBuffer, "SINGLE", Single);
 
-	// Encode the packet
-	//int PacketLength = packet_encode(Packet, BUFSIZE, "CHRSTA", PacketBuffer);
+	//// Encode the packet
+	//PacketLength = packet_encode(Packet, BUFSIZE, "CHRSTA", PacketBuffer);
 
-	//// Test the string parser
+	////// Test the string parser
 	//packet_parser_data(Packet, "SINGLE", SINGLE, buffsize);
 
-	// Print the parsed value
-	/*printf("Testing Parser: SINGLE = %s\n", SINGLE);*/
+	//// Print the parsed value
+	//printf("Testing Parser: SINGLE = %s\n", SINGLE);
 
 	// Print the final packet
 	/*printf("Packet: %s\n", Packet);*/

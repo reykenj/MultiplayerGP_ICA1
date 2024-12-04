@@ -13,6 +13,82 @@
 #define BUFSIZE     1024
 #define PORT_NUMBER 7890
 
+int packet_parser_get_data(const char Packet[], const char DataName[], std::string& DataString)
+{
+	const char* Str = strstr(Packet, DataName);
+	if (Str == NULL)
+	{
+		return 0; // DataName not found
+	}
+
+	const char* Pos = Str + strlen(DataName);
+	while (*Pos == ' ' || *Pos == '=') Pos++; // Skip spaces and '='
+
+	DataString.clear();
+	while (*Pos != ' ' && *Pos != '\n' && *Pos != '\0' && *Pos != '>')
+	{
+		DataString.push_back(*Pos++);
+	}
+
+	return DataString.length(); // Return the length of the parsed string
+}
+
+int packet_parser_data(const char Packet[], const char DataName[])
+{
+	std::string DataString;
+	int ReturnLength;
+
+	return packet_parser_get_data(Packet, DataName, DataString);
+}
+
+int packet_parser_data(const char Packet[], const char DataName[], char Buffer[], int& BufferSize)
+{
+	std::string DataString;
+	int ReturnLength = packet_parser_get_data(Packet, DataName, DataString);
+
+	if (ReturnLength > 0)
+	{
+		if (ReturnLength >= BufferSize)
+		{
+			ReturnLength = BufferSize - 1; // Ensure space for null terminator
+		}
+
+		strncpy(Buffer, DataString.c_str(), ReturnLength);
+		Buffer[ReturnLength] = '\0'; // Null-terminate the buffer
+		BufferSize = ReturnLength;
+	}
+	else
+	{
+		Buffer[0] = '\0'; // Clear the buffer if no data was found
+		BufferSize = 0;
+	}
+
+	return ReturnLength;
+}
+
+int packet_decode(const char Packet[], char PacketID[], int& PacketIDLength, char PacketData[], int& PacketDataLength) {
+	if (Packet == NULL || PacketID == NULL || PacketData == NULL) {
+		return -1; // Error: invalid input
+	}
+	int PacketLength = strlen(Packet);
+	int Pos = 1;
+	int j = 0;
+	while (Pos < PacketLength && Packet[Pos] != ' ') {
+		PacketID[j++] = Packet[Pos++];
+	}
+
+	if (Pos >= PacketLength || Packet[Pos] != ' ') {
+		return -1;
+	}
+	PacketID[j] = '\0';
+	PacketIDLength = j;
+	++Pos;
+	strcpy(PacketData, &Packet[Pos]);
+	PacketDataLength = strlen(PacketData);
+	PacketData[PacketDataLength - 1] = '\0';
+	return strlen(Packet);
+}
+
 void send_welcome_message(SOCKET ClientSocket)
 {
 	char WelcomeMessage[100];
@@ -30,6 +106,43 @@ void store_packet(std::vector<std::array<char, BUFSIZE>>& packetlist, const char
 	std::array<char, BUFSIZE> packet;
 	std::memcpy(packet.data(), Message, BUFSIZE); // Copy the contents of Message
 	packetlist.push_back(packet); // Add it to the vector
+}
+
+void get_and_send_packet_info(std::vector<std::array<char, BUFSIZE>> packetlist, char DataName[], SOCKET ClientSocket, int TargettedSocket) {
+	char* cleanedName = strtok(DataName, "\r\n");
+	int NameLength = strlen(cleanedName) + 1;
+	char sessionID[BUFSIZE];
+	int sessionidLength;
+	int bufsize = BUFSIZE;
+	char SessionIDintToString[BUFSIZE];
+
+	char Info[BUFSIZE];
+
+	char TOTALMESSAGE[BUFSIZE];
+
+
+	for (int i = 0; i < packetlist.size(); i++) {
+		packet_parser_data(packetlist[i].data(), "SESSIONID", sessionID, bufsize);
+		sprintf_s(SessionIDintToString, "%d", TargettedSocket);
+		printf("PACKET SESSION ID %s\n", sessionID);
+		printf("PACKET SESSION ID %s\n", SessionIDintToString);
+		if (!strcmp(sessionID, SessionIDintToString)) {
+			printf("FOUND THE PACKET");
+			packet_parser_data(packetlist[i].data(), DataName, Info, bufsize);
+			sprintf_s(TOTALMESSAGE, "%s = %s", DataName, Info);
+			send(ClientSocket, TOTALMESSAGE, strlen(TOTALMESSAGE), 0);
+			break;
+		}
+		//size_t length = strlen(packetlist[i].data()); // Access the internal buffer
+		//for (int j = 0; j < length - 1; j++) {
+		//	//sscanf(cleaned, "/getinfo %d %[^\n]", &ClientSocketNumber, getmessage)
+		//	//!strncmp(&packetlist[i].data()[j], cleanedName + '=', NameLength)
+		//	if (sscanf(packetlist[i].data(), "/getinfo %d %[^\n]", &ClientSocketNumber, getmessage)) {
+
+		//		break;
+		//	}
+		//}
+	}
 }
 
 void session_info_message(fd_set ReadFds, SOCKET ClientSocket)
@@ -225,7 +338,6 @@ int main(int argc, char** argv)
 					else
 					{ // Message recevied.
 						int ClientSocketNumber = NULL;
-
 						char getmessage[BUFSIZE];
 						char* cleaned = strtok(Message, "\r\n");
 						//<CHRSTA  
@@ -241,6 +353,8 @@ int main(int argc, char** argv)
 						}
 						else if (sscanf(cleaned, "/getinfo %d %[^\n]", &ClientSocketNumber, getmessage) > 0)
 						{
+							get_and_send_packet_info(PacketList, getmessage, TempFds.fd_array[Index], ClientSocketNumber);
+							printf("GETTING STUFF AHAHAH");
 							//whisper_to_one(ReadFds, whispherMessage, Return, TempFds.fd_array[Index], ClientSocketNumber);
 						}
 						else
