@@ -219,7 +219,6 @@ int main(int argc, char** argv)
 
 	while (1)
 	{
-		// Allow the user to choose a new IP and port
 		printf("\nDo you want to connect to a different server? (y/n): ");
 		char choice;
 		scanf(" %c", &choice);
@@ -246,12 +245,12 @@ int main(int argc, char** argv)
 			return 1;
 		}
 
-		// Server address setup
+
 		ServerAddr.sin_family = AF_INET;
 		ServerAddr.sin_port = htons(Port);
 		ServerAddr.sin_addr.s_addr = inet_addr(IPAddress);
 
-		// Attempt to connect to the server
+
 		Return = connect(ConnectSocket, (SOCKADDR*)&ServerAddr, sizeof(ServerAddr));
 		if (Return == SOCKET_ERROR)
 		{
@@ -270,10 +269,10 @@ int main(int argc, char** argv)
 		while (1)
 		{
 			if (_kbhit())
-			{ // To check keyboard input.
+			{ 
 				Message[MessageLen] = _getch();
 				if (('\n' == Message[MessageLen]) || ('\r' == Message[MessageLen]))
-				{ // Send the message to server.
+				{ 
 					putchar('\n');
 					MessageLen++;
 					Message[MessageLen] = '\0';
@@ -310,7 +309,7 @@ int main(int argc, char** argv)
 				Timeout.tv_usec = 1000;
 
 				if (SOCKET_ERROR == (Return = select(0, &TempFds, 0, 0, &Timeout)))
-				{ // Select() function returned error.
+				{
 					closesocket(ConnectSocket);
 					printf("select() error\n");
 					return 1;
@@ -325,23 +324,20 @@ int main(int argc, char** argv)
 					printf("Select Processed... Something to read\n");
 					Return = recv(ConnectSocket, Message, BUFSIZE, 0);
 					if (0 > Return)
-					{ // recv() function returned error.
+					{ 
 						closesocket(ConnectSocket);
 						printf("Exceptional error :Socket Handle [%d]\n", ConnectSocket);
 						return 1;
 					}
 					else if (0 == Return)
-					{ // Connection closed message has arrived.
-						//closesocket(ConnectSocket);
-						//printf("Connection closed :Socket Handle [%d]\n", ConnectSocket);
-						//return 0;
+					{ 
 
 						closesocket(ConnectSocket);
 						ConnectSocket = INVALID_SOCKET;
 						break;
 					}
 					else
-					{ // Message received.
+					{ 
 						printf("Bytes received   : %d\n", Return);
 						printf("Message received : %s\n", Message);
 
@@ -365,7 +361,7 @@ int main(int argc, char** argv)
 		}
 
 
-		// Allow the user to choose a new IP and port
+
 		printf("\nDo you want to quit application? (y/n): ");
 		char choice2;
 		scanf(" %c", &choice2);

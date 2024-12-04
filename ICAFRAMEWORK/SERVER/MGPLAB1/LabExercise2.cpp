@@ -18,11 +18,11 @@ int packet_parser_get_data(const char Packet[], const char DataName[], std::stri
 	const char* Str = strstr(Packet, DataName);
 	if (Str == NULL)
 	{
-		return 0; // DataName not found
+		return 0;
 	}
 
 	const char* Pos = Str + strlen(DataName);
-	while (*Pos == ' ' || *Pos == '=') Pos++; // Skip spaces and '='
+	while (*Pos == ' ' || *Pos == '=') Pos++;
 
 	DataString.clear();
 	while (*Pos != ' ' && *Pos != '\n' && *Pos != '\0' && *Pos != '>')
@@ -30,7 +30,7 @@ int packet_parser_get_data(const char Packet[], const char DataName[], std::stri
 		DataString.push_back(*Pos++);
 	}
 
-	return DataString.length(); // Return the length of the parsed string
+	return DataString.length();
 }
 
 int packet_parser_data(const char Packet[], const char DataName[])
@@ -50,17 +50,17 @@ int packet_parser_data(const char Packet[], const char DataName[], char Buffer[]
 	{
 		if (ReturnLength >= BufferSize)
 		{
-			ReturnLength = BufferSize - 1; // Ensure space for null terminator
+			ReturnLength = BufferSize - 1;
 		}
-		printf("Return Length: %d", ReturnLength);
-		printf("Return Length: %s", DataString);
+		//printf("Return Length: %d", ReturnLength);
+		//printf("Return Length: %s", DataString);
 		strncpy(Buffer, DataString.c_str(), ReturnLength);
-		Buffer[ReturnLength] = '\0'; // Null-terminate the buffer
+		Buffer[ReturnLength] = '\0';
 		BufferSize = ReturnLength;
 	}
 	else
 	{
-		Buffer[0] = '\0'; // Clear the buffer if no data was found
+		Buffer[0] = '\0';
 		BufferSize = 0;
 	}
 
@@ -69,7 +69,7 @@ int packet_parser_data(const char Packet[], const char DataName[], char Buffer[]
 
 int packet_decode(const char Packet[], char PacketID[], int& PacketIDLength, char PacketData[], int& PacketDataLength) {
 	if (Packet == NULL || PacketID == NULL || PacketData == NULL) {
-		return -1; // Error: invalid input
+		return -1;
 	}
 	int PacketLength = strlen(Packet);
 	int Pos = 1;
@@ -105,8 +105,8 @@ void send_welcome_message(SOCKET ClientSocket)
 
 void store_packet(std::vector<std::array<char, BUFSIZE>>& packetlist, const char Message[]) {
 	std::array<char, BUFSIZE> packet;
-	std::memcpy(packet.data(), Message, BUFSIZE); // Copy the contents of Message
-	packetlist.push_back(packet); // Add it to the vector
+	std::memcpy(packet.data(), Message, BUFSIZE); 
+	packetlist.push_back(packet);
 }
 
 void get_and_send_packet_info(std::vector<std::array<char, BUFSIZE>> packetlist, char DataName[], SOCKET ClientSocket, int TargettedSocket) {
@@ -151,15 +151,6 @@ void get_and_send_packet_info(std::vector<std::array<char, BUFSIZE>> packetlist,
 			}
 			return;
 		}
-		//size_t length = strlen(packetlist[i].data()); // Access the internal buffer
-		//for (int j = 0; j < length - 1; j++) {
-		//	//sscanf(cleaned, "/getinfo %d %[^\n]", &ClientSocketNumber, getmessage)
-		//	//!strncmp(&packetlist[i].data()[j], cleanedName + '=', NameLength)
-		//	if (sscanf(packetlist[i].data(), "/getinfo %d %[^\n]", &ClientSocketNumber, getmessage)) {
-
-		//		break;
-		//	}
-		//}
 	}
 
 	send(ClientSocket, NoPacketMessage, NoPacketMessageLength, 0);
@@ -171,36 +162,29 @@ void edit_packet_info(std::vector<std::array<char, BUFSIZE>>& packetlist, const 
 	int bufsize = BUFSIZE;
 	char sessionIDString[BUFSIZE];
 
-	sprintf_s(sessionIDString, "%d", ClientSocket); // Convert session ID to string
+	sprintf_s(sessionIDString, "%d", ClientSocket);
 
 	for (auto& packet : packetlist) {
-		// Extract SESSIONID from the packet
 		if (packet_parser_data(packet.data(), "SESSIONID", sessionID, bufsize) > 0 &&
 			strcmp(sessionID, sessionIDString) == 0) {
 
 			printf("Editing packet for SESSIONID: %s\n", sessionID);
 
-			// Find and edit the desired field
 			char* fieldStart = strstr(packet.data(), DataName);
 			if (fieldStart != nullptr) {
-				// Locate the value start position
 				char* valueStart = fieldStart + strlen(DataName);
-				while (*valueStart == ' ' || *valueStart == '=') valueStart++; // Skip spaces and '='
-
-				// Replace the old value with the new value
+				while (*valueStart == ' ' || *valueStart == '=') valueStart++;
 				char* valueEnd = valueStart;
 				while (*valueEnd && *valueEnd != ' ' && *valueEnd != '\n' && *valueEnd != '\0') {
 					valueEnd++;
 				}
 
-				// Calculate the lengths
 				int oldValueLength = valueEnd - valueStart;
 				int newValueLength = strlen(NewData);
 
-				// Adjust the packet contents if necessary
 				if (newValueLength <= oldValueLength) {
-					memcpy(valueStart, NewData, newValueLength); // Overwrite with new data
-					memset(valueStart + newValueLength, ' ', oldValueLength - newValueLength); // Pad with spaces
+					memcpy(valueStart, NewData, newValueLength); 
+					memset(valueStart + newValueLength, ' ', oldValueLength - newValueLength); 
 				}
 				else {
 					printf("Error: New data is longer than existing space.\n");
@@ -528,6 +512,11 @@ int main(int argc, char** argv)
 							}
 							else if (sscanf(cleaned, "/kick %d %[^\n]", &ClientSocketNumber, getmessage) > 0)
 							{
+								char NoRoomMasterMessage[100];
+								int NoRoomMasterMessageLength;
+								sprintf_s(NoRoomMasterMessage, "<You must be the Room Master to use this command>\n");
+								NoRoomMasterMessageLength = strlen(NoRoomMasterMessage);
+
 								if (RoomMasterSessionID == TempFds.fd_array[Index]) {
 									char LeaveMessage[100];
 									int LeaveMessageLength;
@@ -542,11 +531,22 @@ int main(int argc, char** argv)
 									printf("Connection closed :Socket Handle [%d]\n", ClientSocketNumber);
 									FD_CLR(ClientSocketNumber, &ReadFds);
 								}
+								else {
+									send(TempFds.fd_array[Index], NoRoomMasterMessage, NoRoomMasterMessageLength, 0);
+								}
 							}
 							else if (sscanf(cleaned, "/setpassword %[^\n]", getmessage) > 0)
 							{
+								char NoRoomMasterMessage[100];
+								int NoRoomMasterMessageLength;
+								sprintf_s(NoRoomMasterMessage, "<You must be the Room Master to use this command>\n");
+								NoRoomMasterMessageLength = strlen(NoRoomMasterMessage);
+
 								if (RoomMasterSessionID == TempFds.fd_array[Index]) {
 									strcpy(Password, getmessage);
+								}
+								else {
+									send(TempFds.fd_array[Index], NoRoomMasterMessage, NoRoomMasterMessageLength, 0);
 								}
 							}
 							else if (sscanf(cleaned, "/changepacket %s %s", getmessage, getmessage2) > 0)
