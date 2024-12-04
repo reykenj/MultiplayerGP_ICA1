@@ -178,19 +178,21 @@ int main(int argc, char** argv)
 	int SessionID = NULL;
 	int Height = 40;
 	int Weight = 10000;
-	char Single[BUFSIZE] = "No";
+	char Single[BUFSIZE] = "SINGLE";
 	int PacketLength;
 
 	// Add data to the packet
 	packet_add_data(PacketBuffer, "HEIGHT", Height);
 	packet_add_data(PacketBuffer, "WEIGHT", Weight);
-	packet_add_data(PacketBuffer, "SINGLE", Single);
+	packet_add_data(PacketBuffer, "RELATIONSHIP", Single);
 
-	//// Encode the packet
+	////// Encode the packet
 	//PacketLength = packet_encode(Packet, BUFSIZE, "CHRSTA", PacketBuffer);
 
-	////// Test the string parser
-	//packet_parser_data(Packet, "SINGLE", SINGLE, buffsize);
+	//////// Test the string parser
+	//packet_parser_data(Packet, "RELATIONSHIP", SINGLE, buffsize);
+
+	//packet_parser_data(Packet, "RELATIONSHIP", SINGLE, buffsize);
 
 	//// Print the parsed value
 	//printf("Testing Parser: SINGLE = %s\n", SINGLE);
@@ -277,6 +279,7 @@ int main(int argc, char** argv)
 					Message[MessageLen] = '\0';
 					if (!strncmp(Message, "/send packet", 12)) {
 						printf("\n sending packet");
+						printf("PACKET = %s\n", Packet);
 						strcpy(Message, Packet);
 						MessageLen = strlen(Message);
 					}

@@ -52,7 +52,8 @@ int packet_parser_data(const char Packet[], const char DataName[], char Buffer[]
 		{
 			ReturnLength = BufferSize - 1; // Ensure space for null terminator
 		}
-
+		printf("Return Length: %d", ReturnLength);
+		printf("Return Length: %s", DataString);
 		strncpy(Buffer, DataString.c_str(), ReturnLength);
 		Buffer[ReturnLength] = '\0'; // Null-terminate the buffer
 		BufferSize = ReturnLength;
@@ -127,8 +128,10 @@ void get_and_send_packet_info(std::vector<std::array<char, BUFSIZE>> packetlist,
 		printf("PACKET SESSION ID %s\n", sessionID);
 		printf("PACKET SESSION ID %s\n", SessionIDintToString);
 		if (!strcmp(sessionID, SessionIDintToString)) {
-			printf("FOUND THE PACKET");
+			printf("FOUND THE PACKET\n");
+			bufsize = BUFSIZE;
 			packet_parser_data(packetlist[i].data(), DataName, Info, bufsize);
+			printf("INFO SENDING: %s\n", Info);
 			sprintf_s(TOTALMESSAGE, "%s = %s", DataName, Info);
 			send(ClientSocket, TOTALMESSAGE, strlen(TOTALMESSAGE), 0);
 			break;
@@ -217,12 +220,7 @@ void whisper_to_one(fd_set ReadFds, char Message[], int MessageLength, SOCKET Cl
 	}
 }
 void print_user_list(fd_set ReadFds, SOCKET ClientSocket) {
-	int MsgPos;
 	int FD_Index;
-	char FailMessage[] = "<Fail to send a message>";
-	int FailMessageLength = strlen(FailMessage);
-	char SuccessMessage[BUFSIZE];
-	int SuccessMessageLength;
 	char UserListMessage[BUFSIZE];
 	int UserListMessageLength;
 
@@ -233,6 +231,22 @@ void print_user_list(fd_set ReadFds, SOCKET ClientSocket) {
 	}
 	UserListMessageLength = strlen(UserListMessage);
 	send(ClientSocket, UserListMessage, UserListMessageLength, 0);
+}
+
+void print_commands(SOCKET ClientSocket) {
+	char CommandListMessage[BUFSIZE];
+	int CommandListMessageLength;
+
+	sprintf_s(CommandListMessage, "\n<COMMAND LIST:> \n");
+	sprintf_s(CommandListMessage, "%s <COMMAND: /w [UserNumber] [Message]> = Private messaging a specific user \n", CommandListMessage);
+	sprintf_s(CommandListMessage, "%s <COMMAND: /send packet> = Send user information to server \n", CommandListMessage);
+	sprintf_s(CommandListMessage, "%s <COMMAND: /getuserlist> = Get list of users in server \n", CommandListMessage);
+	sprintf_s(CommandListMessage, "%s <COMMAND: /getinfo [UserNumber] [DataName]> = Getting info of person \n", CommandListMessage);
+	sprintf_s(CommandListMessage, "%s <DataNames: [HEIGHT], [WEIGHT], [RELATIONSHIP]>\n", CommandListMessage);
+	sprintf_s(CommandListMessage, "%s <COMMAND: /leave> = Leave Server \n", CommandListMessage);
+
+	CommandListMessageLength = strlen(CommandListMessage);
+	send(ClientSocket, CommandListMessage, CommandListMessageLength, 0);
 }
 
 void send_to_all(fd_set ReadFds, char Message[], int MessageLength)
@@ -393,6 +407,11 @@ int main(int argc, char** argv)
 						{
 							get_and_send_packet_info(PacketList, getmessage, TempFds.fd_array[Index], ClientSocketNumber);
 							printf("GETTING STUFF AHAHAH");
+							//whisper_to_one(ReadFds, whispherMessage, Return, TempFds.fd_array[Index], ClientSocketNumber);
+						}
+						else if (!strncmp("/help", cleaned, 5))
+						{
+							print_commands(TempFds.fd_array[Index]);
 							//whisper_to_one(ReadFds, whispherMessage, Return, TempFds.fd_array[Index], ClientSocketNumber);
 						}
 						else
