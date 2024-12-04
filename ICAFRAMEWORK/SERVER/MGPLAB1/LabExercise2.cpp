@@ -227,7 +227,7 @@ void print_user_list(fd_set ReadFds, SOCKET ClientSocket) {
 	sprintf_s(UserListMessage, "\n <USER LIST: %d> \n", ReadFds.fd_count - 1);
 	for (FD_Index = 1; FD_Index < ReadFds.fd_count; ++FD_Index)
 	{
-		sprintf_s(UserListMessage, "%s <User: %d> \n", UserListMessage, ClientSocket);
+		sprintf_s(UserListMessage, "%s <User: %d> \n", UserListMessage, ReadFds.fd_array[FD_Index]);
 	}
 	UserListMessageLength = strlen(UserListMessage);
 	send(ClientSocket, UserListMessage, UserListMessageLength, 0);
