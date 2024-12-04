@@ -360,6 +360,18 @@ int main(int argc, char** argv)
 				}
 			}
 		}
+
+
+		// Allow the user to choose a new IP and port
+		printf("\nDo you want to quit application? (y/n): ");
+		char choice2;
+		scanf(" %c", &choice2);
+
+		if (choice2 == 'y' || choice2 == 'Y')
+		{
+			printf("Goodbye!");
+			break;
+		}
 	}
 
 	closesocket(ConnectSocket);
