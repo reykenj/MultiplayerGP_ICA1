@@ -4,6 +4,8 @@
 #include <string.h>
 #include <winsock2.h>
 #include <iostream>
+#include <vector>
+#include <array>
 
 /// Link with ws2_32.lib
 #pragma comment(lib, "Ws2_32.lib")
@@ -20,6 +22,14 @@ void send_welcome_message(SOCKET ClientSocket)
 	WelcomeMessageLength = strlen(WelcomeMessage);
 
 	send(ClientSocket, WelcomeMessage, WelcomeMessageLength, 0);
+}
+
+
+
+void store_packet(std::vector<std::array<char, BUFSIZE>>& packetlist, const char Message[]) {
+	std::array<char, BUFSIZE> packet;
+	std::memcpy(packet.data(), Message, BUFSIZE); // Copy the contents of Message
+	packetlist.push_back(packet); // Add it to the vector
 }
 
 void session_info_message(fd_set ReadFds, SOCKET ClientSocket)
@@ -122,6 +132,8 @@ int main(int argc, char** argv)
 	char         Message[BUFSIZE];
 	int          Return;
 
+	std::vector<std::array<char, BUFSIZE>> PacketList;
+
 	if (2 == argc)
 	{
 		Port = atoi(argv[1]);
@@ -214,18 +226,30 @@ int main(int argc, char** argv)
 					{ // Message recevied.
 						int ClientSocketNumber = NULL;
 
-						char whispherMessage[BUFSIZE];
+						char getmessage[BUFSIZE];
 						char* cleaned = strtok(Message, "\r\n");
-						
+						//<CHRSTA  
 
-						if (sscanf(cleaned, "/w %d %[^\n]", &ClientSocketNumber, whispherMessage) > 0)
+						if (sscanf(cleaned, "/w %d %[^\n]", &ClientSocketNumber, getmessage) > 0)
 						{
-							whisper_to_one(ReadFds, whispherMessage, Return, TempFds.fd_array[Index], ClientSocketNumber);
+							whisper_to_one(ReadFds, getmessage, Return, TempFds.fd_array[Index], ClientSocketNumber);
+						}
+						else if (!strncmp("<CHRSTA", cleaned, 7))
+						{
+							printf("RECIEVED PACKET\n");
+							store_packet(PacketList, Message);
+						}
+						else if (sscanf(cleaned, "/getinfo %d %[^\n]", &ClientSocketNumber, getmessage) > 0)
+						{
+							//whisper_to_one(ReadFds, whispherMessage, Return, TempFds.fd_array[Index], ClientSocketNumber);
 						}
 						else
 						{
 							send_to_all(ReadFds, Message, Return);
 						}
+
+						//printf("RECIEVED PACKET SIZE %d\n", PacketList.size());
+
 					}
 				}
 			}
