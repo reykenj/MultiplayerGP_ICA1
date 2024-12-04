@@ -216,6 +216,24 @@ void whisper_to_one(fd_set ReadFds, char Message[], int MessageLength, SOCKET Cl
 		send(ClientSocket, FailMessage, FailMessageLength, 0);
 	}
 }
+void print_user_list(fd_set ReadFds, SOCKET ClientSocket) {
+	int MsgPos;
+	int FD_Index;
+	char FailMessage[] = "<Fail to send a message>";
+	int FailMessageLength = strlen(FailMessage);
+	char SuccessMessage[BUFSIZE];
+	int SuccessMessageLength;
+	char UserListMessage[BUFSIZE];
+	int UserListMessageLength;
+
+	sprintf_s(UserListMessage, "\n <USER LIST: %d> \n", ReadFds.fd_count - 1);
+	for (FD_Index = 1; FD_Index < ReadFds.fd_count; ++FD_Index)
+	{
+		sprintf_s(UserListMessage, "%s <User: %d> \n", UserListMessage, ClientSocket);
+	}
+	UserListMessageLength = strlen(UserListMessage);
+	send(ClientSocket, UserListMessage, UserListMessageLength, 0);
+}
 
 void send_to_all(fd_set ReadFds, char Message[], int MessageLength)
 {
@@ -346,7 +364,7 @@ int main(int argc, char** argv)
 						{
 							whisper_to_one(ReadFds, getmessage, Return, TempFds.fd_array[Index], ClientSocketNumber);
 						}
-						if (!strncmp("/leave", cleaned, 6))
+						else if (!strncmp("/leave", cleaned, 6))
 						{
 
 							char LeaveMessage[100];
@@ -361,6 +379,10 @@ int main(int argc, char** argv)
 							closesocket(TempFds.fd_array[Index]);
 							printf("Connection closed :Socket Handle [%d]\n", TempFds.fd_array[Index]);
 							FD_CLR(TempFds.fd_array[Index], &ReadFds);
+						}
+						else if (!strncmp("/getuserlist", cleaned, 12))
+						{
+							print_user_list(ReadFds, TempFds.fd_array[Index]);
 						}
 						else if (!strncmp("<CHRSTA", cleaned, 7))
 						{
