@@ -116,10 +116,19 @@ void get_and_send_packet_info(std::vector<std::array<char, BUFSIZE>> packetlist,
 	int sessionidLength;
 	int bufsize = BUFSIZE;
 	char SessionIDintToString[BUFSIZE];
-
 	char Info[BUFSIZE];
-
 	char TOTALMESSAGE[BUFSIZE];
+
+	char NoPacketMessage[100];
+	int NoPacketMessageLength;
+	sprintf_s(NoPacketMessage, "<No Packet Found>");
+	NoPacketMessageLength = strlen(NoPacketMessage);
+
+	char NoDataNameMessage[100];
+	int NoDataNameMessageLength;
+	sprintf_s(NoDataNameMessage, "<No Data Called %s Found>", DataName);
+	NoDataNameMessageLength = strlen(NoDataNameMessage);
+
 
 
 	for (int i = 0; i < packetlist.size(); i++) {
@@ -130,11 +139,17 @@ void get_and_send_packet_info(std::vector<std::array<char, BUFSIZE>> packetlist,
 		if (!strcmp(sessionID, SessionIDintToString)) {
 			printf("FOUND THE PACKET\n");
 			bufsize = BUFSIZE;
-			packet_parser_data(packetlist[i].data(), DataName, Info, bufsize);
-			printf("INFO SENDING: %s\n", Info);
-			sprintf_s(TOTALMESSAGE, "%s = %s", DataName, Info);
-			send(ClientSocket, TOTALMESSAGE, strlen(TOTALMESSAGE), 0);
-			break;
+			//int ReturnLength;
+			int ReturnLength = packet_parser_data(packetlist[i].data(), DataName, Info, bufsize);
+			if (ReturnLength > 0) {
+				printf("INFO SENDING: %s\n", Info);
+				sprintf_s(TOTALMESSAGE, "%s = %s", DataName, Info);
+				send(ClientSocket, TOTALMESSAGE, strlen(TOTALMESSAGE), 0);
+			}
+			else {
+				send(ClientSocket, NoDataNameMessage, NoDataNameMessageLength, 0);
+			}
+			return;
 		}
 		//size_t length = strlen(packetlist[i].data()); // Access the internal buffer
 		//for (int j = 0; j < length - 1; j++) {
@@ -146,6 +161,8 @@ void get_and_send_packet_info(std::vector<std::array<char, BUFSIZE>> packetlist,
 		//	}
 		//}
 	}
+
+	send(ClientSocket, NoPacketMessage, NoPacketMessageLength, 0);
 }
 
 
@@ -299,6 +316,9 @@ void print_commands(SOCKET ClientSocket) {
 	sprintf_s(CommandListMessage, "%s <COMMAND: /getinfo [UserNumber] [DataName]> = Getting info of person \n", CommandListMessage);
 	sprintf_s(CommandListMessage, "%s <DataNames: [HEIGHT], [WEIGHT], [RELATIONSHIP]>\n", CommandListMessage);
 	sprintf_s(CommandListMessage, "%s <COMMAND: /leave> = Leave Server \n", CommandListMessage);
+	sprintf_s(CommandListMessage, "%s <COMMAND: /kick [UserNumber] [Reason]> = Kicks players off the server \n", CommandListMessage);
+	sprintf_s(CommandListMessage, "%s <COMMAND: /setpassword [Password]> = Changes and sets a password \n", CommandListMessage);
+	sprintf_s(CommandListMessage, "%s <COMMAND: /changepacket [DataName] [NewData]> = Changes packet data provided \n", CommandListMessage);
 
 	CommandListMessageLength = strlen(CommandListMessage);
 	send(ClientSocket, CommandListMessage, CommandListMessageLength, 0);
@@ -413,6 +433,13 @@ int main(int argc, char** argv)
 					if (RoomMasterPresent && ReadFds.fd_count == 2) {
 						RoomMasterSessionID = ClientSocket;
 						printf("FOUND ROOM MASTER: [%d]\n", RoomMasterSessionID);
+
+
+						char RoomMasterMessage[100];
+						int RoomMasterMessageLength;
+						sprintf_s(RoomMasterMessage, "\n <You are now the RoomMaster, you have extra permissions now!> \n");
+						RoomMasterMessageLength = strlen(RoomMasterMessage);
+						send(ClientSocket, RoomMasterMessage, RoomMasterMessageLength, 0);
 					}
 					int PasswordLength = strlen(Password);
 					if (PasswordLength > 0) {
