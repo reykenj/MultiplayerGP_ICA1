@@ -148,6 +148,61 @@ void get_and_send_packet_info(std::vector<std::array<char, BUFSIZE>> packetlist,
 	}
 }
 
+
+void edit_packet_info(std::vector<std::array<char, BUFSIZE>>& packetlist, const char DataName[], SOCKET ClientSocket, const char NewData[]) {
+	char sessionID[BUFSIZE];
+	int bufsize = BUFSIZE;
+	char sessionIDString[BUFSIZE];
+
+	sprintf_s(sessionIDString, "%d", ClientSocket); // Convert session ID to string
+
+	for (auto& packet : packetlist) {
+		// Extract SESSIONID from the packet
+		if (packet_parser_data(packet.data(), "SESSIONID", sessionID, bufsize) > 0 &&
+			strcmp(sessionID, sessionIDString) == 0) {
+
+			printf("Editing packet for SESSIONID: %s\n", sessionID);
+
+			// Find and edit the desired field
+			char* fieldStart = strstr(packet.data(), DataName);
+			if (fieldStart != nullptr) {
+				// Locate the value start position
+				char* valueStart = fieldStart + strlen(DataName);
+				while (*valueStart == ' ' || *valueStart == '=') valueStart++; // Skip spaces and '='
+
+				// Replace the old value with the new value
+				char* valueEnd = valueStart;
+				while (*valueEnd && *valueEnd != ' ' && *valueEnd != '\n' && *valueEnd != '\0') {
+					valueEnd++;
+				}
+
+				// Calculate the lengths
+				int oldValueLength = valueEnd - valueStart;
+				int newValueLength = strlen(NewData);
+
+				// Adjust the packet contents if necessary
+				if (newValueLength <= oldValueLength) {
+					memcpy(valueStart, NewData, newValueLength); // Overwrite with new data
+					memset(valueStart + newValueLength, ' ', oldValueLength - newValueLength); // Pad with spaces
+				}
+				else {
+					printf("Error: New data is longer than existing space.\n");
+					return;
+				}
+
+				printf("Field %s updated to: %s\n", DataName, NewData);
+				return;
+			}
+			else {
+				printf("Field %s not found in packet.\n", DataName);
+				return;
+			}
+		}
+	}
+
+	printf("No matching packet found for SESSIONID: %s\n", sessionIDString);
+}
+
 void session_info_message(fd_set ReadFds, SOCKET ClientSocket)
 {
 	int i;
@@ -396,6 +451,7 @@ int main(int argc, char** argv)
 					{ // Message recevied.
 						int ClientSocketNumber = NULL;
 						char getmessage[BUFSIZE];
+						char getmessage2[BUFSIZE];
 						char* cleaned = strtok(Message, "\r\n");
 						bool unverified = false;
 						int UnverifiedIndex;
@@ -465,6 +521,10 @@ int main(int argc, char** argv)
 								if (RoomMasterSessionID == TempFds.fd_array[Index]) {
 									strcpy(Password, getmessage);
 								}
+							}
+							else if (sscanf(cleaned, "/changepacket %s %s", getmessage, getmessage2) > 0)
+							{
+								edit_packet_info(PacketList, getmessage, TempFds.fd_array[Index], getmessage2);
 							}
 							else if (!strncmp("/help", cleaned, 5))
 							{
