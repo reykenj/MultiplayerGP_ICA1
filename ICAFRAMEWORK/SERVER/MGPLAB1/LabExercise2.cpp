@@ -283,6 +283,8 @@ int main(int argc, char** argv)
 
 	std::vector<std::array<char, BUFSIZE>> PacketList;
 
+	std::vector<int> unverified_userlist;
+
 	if (2 == argc)
 	{
 		Port = atoi(argv[1]);
@@ -360,9 +362,10 @@ int main(int argc, char** argv)
 					send_welcome_message(ClientSocket);
 					session_info_message(ReadFds, ClientSocket);
 					send_notice_message(ReadFds, ClientSocket);
-					//int PasswordLength = strlen(Password);
-					//if()
-					//strlen(Password)
+					int PasswordLength = strlen(Password);
+					if (PasswordLength > 0) {
+						unverified_userlist.push_back(ClientSocket);
+					}
 				}
 				else
 				{ // Something to read from socket.
@@ -385,74 +388,104 @@ int main(int argc, char** argv)
 						int ClientSocketNumber = NULL;
 						char getmessage[BUFSIZE];
 						char* cleaned = strtok(Message, "\r\n");
+						bool unverified = false;
+						int UnverifiedIndex;
 						//<CHRSTA  
-
-						if (sscanf(cleaned, "/w %d %[^\n]", &ClientSocketNumber, getmessage) > 0)
-						{
-							whisper_to_one(ReadFds, getmessage, Return, TempFds.fd_array[Index], ClientSocketNumber);
+						for (UnverifiedIndex = 0; UnverifiedIndex < unverified_userlist.size(); UnverifiedIndex++) {
+							if (TempFds.fd_array[Index] == unverified_userlist[UnverifiedIndex]) {
+								unverified = true;
+								break;
+							}
 						}
-						else if (!strncmp("/leave", cleaned, 6))
-						{
 
-							char LeaveMessage[100];
-							int LeaveMessageLength;
+						if (!unverified) {
+							if (sscanf(cleaned, "/w %d %[^\n]", &ClientSocketNumber, getmessage) > 0)
+							{
+								whisper_to_one(ReadFds, getmessage, Return, TempFds.fd_array[Index], ClientSocketNumber);
+							}
+							else if (!strncmp("/leave", cleaned, 6))
+							{
 
-							sprintf_s(LeaveMessage, "<Leave Accepted>");
-							LeaveMessageLength = strlen(LeaveMessage);
-
-							send(TempFds.fd_array[Index], LeaveMessage, LeaveMessageLength, 0);
-
-
-							closesocket(TempFds.fd_array[Index]);
-							printf("Connection closed :Socket Handle [%d]\n", TempFds.fd_array[Index]);
-							FD_CLR(TempFds.fd_array[Index], &ReadFds);
-						}
-						else if (!strncmp("/getuserlist", cleaned, 12))
-						{
-							print_user_list(ReadFds, TempFds.fd_array[Index]);
-						}
-						else if (!strncmp("<CHRSTA", cleaned, 7))
-						{
-							printf("RECIEVED PACKET\n");
-							store_packet(PacketList, Message);
-						}
-						else if (sscanf(cleaned, "/getinfo %d %[^\n]", &ClientSocketNumber, getmessage) > 0)
-						{
-							get_and_send_packet_info(PacketList, getmessage, TempFds.fd_array[Index], ClientSocketNumber);
-							printf("GETTING STUFF");
-							//whisper_to_one(ReadFds, whispherMessage, Return, TempFds.fd_array[Index], ClientSocketNumber);
-						}
-						else if (sscanf(cleaned, "/kick %d %[^\n]", &ClientSocketNumber, getmessage) > 0)
-						{
-							if (RoomMasterSessionID == TempFds.fd_array[Index]) {
 								char LeaveMessage[100];
 								int LeaveMessageLength;
 
-								sprintf_s(LeaveMessage, "<KICKED FOR: %s>", getmessage);
+								sprintf_s(LeaveMessage, "<Leave Accepted>");
 								LeaveMessageLength = strlen(LeaveMessage);
 
-								send(ClientSocketNumber, LeaveMessage, LeaveMessageLength, 0);
+								send(TempFds.fd_array[Index], LeaveMessage, LeaveMessageLength, 0);
 
 
-								closesocket(ClientSocketNumber);
-								printf("Connection closed :Socket Handle [%d]\n", ClientSocketNumber);
-								FD_CLR(ClientSocketNumber, &ReadFds);
+								closesocket(TempFds.fd_array[Index]);
+								printf("Connection closed :Socket Handle [%d]\n", TempFds.fd_array[Index]);
+								FD_CLR(TempFds.fd_array[Index], &ReadFds);
+							}
+							else if (!strncmp("/getuserlist", cleaned, 12))
+							{
+								print_user_list(ReadFds, TempFds.fd_array[Index]);
+							}
+							else if (!strncmp("<CHRSTA", cleaned, 7))
+							{
+								printf("RECIEVED PACKET\n");
+								store_packet(PacketList, Message);
+							}
+							else if (sscanf(cleaned, "/getinfo %d %[^\n]", &ClientSocketNumber, getmessage) > 0)
+							{
+								get_and_send_packet_info(PacketList, getmessage, TempFds.fd_array[Index], ClientSocketNumber);
+								printf("GETTING STUFF");
+								//whisper_to_one(ReadFds, whispherMessage, Return, TempFds.fd_array[Index], ClientSocketNumber);
+							}
+							else if (sscanf(cleaned, "/kick %d %[^\n]", &ClientSocketNumber, getmessage) > 0)
+							{
+								if (RoomMasterSessionID == TempFds.fd_array[Index]) {
+									char LeaveMessage[100];
+									int LeaveMessageLength;
+
+									sprintf_s(LeaveMessage, "<KICKED FOR: %s>", getmessage);
+									LeaveMessageLength = strlen(LeaveMessage);
+
+									send(ClientSocketNumber, LeaveMessage, LeaveMessageLength, 0);
+
+
+									closesocket(ClientSocketNumber);
+									printf("Connection closed :Socket Handle [%d]\n", ClientSocketNumber);
+									FD_CLR(ClientSocketNumber, &ReadFds);
+								}
+							}
+							else if (sscanf(cleaned, "/setpassword %[^\n]", getmessage) > 0)
+							{
+								if (RoomMasterSessionID == TempFds.fd_array[Index]) {
+									strcpy(Password, getmessage);
+								}
+							}
+							else if (!strncmp("/help", cleaned, 5))
+							{
+								print_commands(TempFds.fd_array[Index]);
+								//whisper_to_one(ReadFds, whispherMessage, Return, TempFds.fd_array[Index], ClientSocketNumber);
+							}
+							else
+							{
+								send_to_all(ReadFds, Message, Return);
 							}
 						}
-						else if (sscanf(cleaned, "/setpassword %[^\n]", getmessage) > 0)
-						{
-							if (RoomMasterSessionID == TempFds.fd_array[Index]) {
-								strcpy(Password, getmessage);
+						else {
+
+							char PasswordCorrectMessage[100];
+							int PasswordCorrectMessageLength;
+							sprintf_s(PasswordCorrectMessage, "<PASSWORD IS CORRECT>");
+							PasswordCorrectMessageLength = strlen(PasswordCorrectMessage);
+
+							char PasswordWrongMessage[100];
+							int PasswordWrongMessageLength;
+							sprintf_s(PasswordWrongMessage, "<PASSWORD IS INCORRECT>");
+							PasswordWrongMessageLength = strlen(PasswordWrongMessage);
+
+							if (!strcmp(Password, cleaned)) {
+								unverified_userlist.erase(unverified_userlist.begin() + UnverifiedIndex);
+								send(TempFds.fd_array[Index], PasswordCorrectMessage, PasswordCorrectMessageLength, 0);
 							}
-						}
-						else if (!strncmp("/help", cleaned, 5))
-						{
-							print_commands(TempFds.fd_array[Index]);
-							//whisper_to_one(ReadFds, whispherMessage, Return, TempFds.fd_array[Index], ClientSocketNumber);
-						}
-						else
-						{
-							send_to_all(ReadFds, Message, Return);
+							else {
+								send(TempFds.fd_array[Index], PasswordWrongMessage, PasswordWrongMessageLength, 0);
+							}
 						}
 
 						//printf("RECIEVED PACKET SIZE %d\n", PacketList.size());
