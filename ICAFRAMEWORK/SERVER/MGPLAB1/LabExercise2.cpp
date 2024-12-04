@@ -416,8 +416,25 @@ int main(int argc, char** argv)
 						else if (sscanf(cleaned, "/getinfo %d %[^\n]", &ClientSocketNumber, getmessage) > 0)
 						{
 							get_and_send_packet_info(PacketList, getmessage, TempFds.fd_array[Index], ClientSocketNumber);
-							printf("GETTING STUFF AHAHAH");
+							printf("GETTING STUFF");
 							//whisper_to_one(ReadFds, whispherMessage, Return, TempFds.fd_array[Index], ClientSocketNumber);
+						}
+						else if (sscanf(cleaned, "/kick %d %[^\n]", &ClientSocketNumber, getmessage) > 0)
+						{
+							if (RoomMasterSessionID == TempFds.fd_array[Index]) {
+								char LeaveMessage[100];
+								int LeaveMessageLength;
+
+								sprintf_s(LeaveMessage, "<KICKED FOR: %s>", getmessage);
+								LeaveMessageLength = strlen(LeaveMessage);
+
+								send(ClientSocketNumber, LeaveMessage, LeaveMessageLength, 0);
+
+
+								closesocket(ClientSocketNumber);
+								printf("Connection closed :Socket Handle [%d]\n", ClientSocketNumber);
+								FD_CLR(ClientSocketNumber, &ReadFds);
+							}
 						}
 						else if (!strncmp("/help", cleaned, 5))
 						{
